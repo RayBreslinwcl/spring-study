@@ -4,9 +4,62 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         https://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <bean id="address" class="com.ray.pojo.Address">
+        <property name="address" value="address 地址"/>
+    </bean>
+
     <bean id="student" class="com.ray.pojo.Student">
         <!--第1种，普通注入-->
         <property name="name" value="ray 666"/>
+
+        <!--第2种，bean注入，ref-->
+        <property name="address" ref="address"/>
+
+        <!--第3种，数组注入-->
+        <property name="books">
+            <array>
+                <value>红楼梦</value>
+                <value>西游记</value>
+                <value>三国</value>
+            </array>
+        </property>
+
+        <property name="hobbys">
+            <list>
+                <value>听歌</value>
+                <value>看电影</value>
+            </list>
+        </property>
+
+        <property name="card">
+            <map>
+                <entry key="身份证" value="123123434"/>
+                <entry key="身份证2" value="123123434"/>
+            </map>
+        </property>
+
+        <property name="games">
+            <set>
+                <value>LOL</value>
+                <value>COC</value>
+            </set>
+        </property>
+
+        <!--null注入-->
+        <property name="wife">
+
+            <!--<null></null>-->
+            <null/>
+        </property>
+        
+        <!--Properties-->
+        <property name="info">
+            <props>
+                <prop key="学号">23</prop>
+                <prop key="学号2">2343</prop>
+                <prop key="性别">男</prop>
+            </props>
+        </property>
 
     </bean>
 </beans>
