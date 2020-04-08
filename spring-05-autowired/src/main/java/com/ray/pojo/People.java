@@ -2,15 +2,19 @@ package com.ray.pojo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.Resource;
 
+//import javax.annotation.Resource;
 /**
  * Created by Administrator on 2020/4/8.
  */
 public class People {
-    @Autowired
+//    @Autowired
+    @javax.annotation.Resource
     Cat cat;
-    @Autowired
-    @Qualifier(value = "dog22")
+//    @Autowired
+//    @Qualifier(value = "dog22")
+    @javax.annotation.Resource(name = "dog22")
     Dog dog;
     String name;
 

@@ -801,3 +801,73 @@ wangwang~~~~
 People{cat=com.ray.pojo.Cat@192d3247, dog=com.ray.pojo.Dog@3ecd23d9, name='null'}
 ```
 
+#### 5.resource注解（java原生注解）
+
+```java
+package com.ray.pojo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.Resource;
+
+//import javax.annotation.Resource;
+/**
+ * Created by Administrator on 2020/4/8.
+ */
+public class People {
+//    @Autowired
+    @javax.annotation.Resource
+    Cat cat;
+//    @Autowired
+//    @Qualifier(value = "dog22")
+    @javax.annotation.Resource(name = "dog22")
+    Dog dog;
+    String name;
+
+    public Cat getCat() {
+        return cat;
+    }
+
+    public void setCat(Cat cat) {
+        this.cat = cat;
+    }
+
+    public Dog getDog() {
+        return dog;
+    }
+
+    public void setDog(Dog dog) {
+        this.dog = dog;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "People{" +
+                "cat=" + cat +
+                ", dog=" + dog +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+
+```
+
+6. #### @Autowired和  @javax.annotation.Resource(name = "dog22")区别
+
+- 相同
+
+  都是用来自动装配的，都可以放在属性字段上
+
+- 区别
+
+  @Autowired先通过byType的方式实现，而且必须要求这个对象存在！如果超出两个bean，则通过byName实现【常用】
+  @Resource默认通过byname的方式实现，如果找不到名字，则通过byType实现！如果两个都找不到的情况下，就报错！【常用】
+  执行顺序不同：@Autowired 通过byType的方式实现。@Resource默认通过byname的方式实现
