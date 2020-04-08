@@ -386,3 +386,227 @@ applicationContext.xml如下
 
 
 
+## 七、bean的自动装配【spring-05】
+
+### 1.定义
+
+Spring会在上下文种自动寻找，并自动给bean装配属性
+
+### 2.三种装配方式
+
+#### 1. xml显示装配
+
+   - 第一步：类
+
+     ```java
+     package com.ray.pojo;
+     
+     /**
+      * Created by Administrator on 2020/4/8.
+      */
+     public class Cat {
+         public void jiao(){
+             System.out.println("miaomiao~~~~");
+         }
+     }
+     
+     //=======================================================
+     
+     package com.ray.pojo;
+     
+     /**
+      * Created by Administrator on 2020/4/8.
+      */
+     public class Dog {
+         public void jiao(){
+             System.out.println("wangwang~~~~");
+         }
+     }
+     
+     
+     //=======================================================
+     package com.ray.pojo;
+     
+     import org.springframework.beans.factory.annotation.Autowired;
+     
+     /**
+      * Created by Administrator on 2020/4/8.
+      */
+     public class People {
+         @Autowired
+         Cat cat;
+         @Autowired
+         Dog dog;
+         String name;
+     
+         public Cat getCat() {
+             return cat;
+         }
+     
+         public void setCat(Cat cat) {
+             this.cat = cat;
+         }
+     
+         public Dog getDog() {
+             return dog;
+         }
+     
+         public void setDog(Dog dog) {
+             this.dog = dog;
+         }
+     
+         public String getName() {
+             return name;
+         }
+     
+         public void setName(String name) {
+             this.name = name;
+         }
+     
+         @Override
+         public String toString() {
+             return "People{" +
+                     "cat=" + cat +
+                     ", dog=" + dog +
+                     ", name='" + name + '\'' +
+                     '}';
+         }
+     }
+     
+     ```
+
+     
+
+   - 第二步：xml显示配置
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd">
+   
+       <bean id="address" class="com.ray.pojo.Address" scope="singleton">
+           <property name="address" value="address 地址"/>
+       </bean>
+   
+       <bean id="student" class="com.ray.pojo.Student" scope="prototype">
+           <!--第1种，普通注入-->
+           <property name="name" value="ray 666"/>
+   
+           <!--第2种，bean注入，ref-->
+           <property name="address" ref="address"/>
+   
+           <!--第3种，数组注入-->
+           <property name="books">
+               <array>
+                   <value>红楼梦</value>
+                   <value>西游记</value>
+                   <value>三国</value>
+               </array>
+           </property>
+   
+           <property name="hobbys">
+               <list>
+                   <value>听歌</value>
+                   <value>看电影</value>
+               </list>
+           </property>
+   
+           <property name="card">
+               <map>
+                   <entry key="身份证" value="123123434"/>
+                   <entry key="身份证2" value="123123434"/>
+               </map>
+           </property>
+   
+           <property name="games">
+               <set>
+                   <value>LOL</value>
+                   <value>COC</value>
+               </set>
+           </property>
+   
+           <!--null注入-->
+           <property name="wife">
+   
+               <!--<null></null>-->
+               <null/>
+           </property>
+           
+           <!--Properties-->
+           <property name="info">
+               <props>
+                   <prop key="学号">23</prop>
+                   <prop key="学号2">2343</prop>
+                   <prop key="性别">男</prop>
+               </props>
+           </property>
+   
+       </bean>
+   </beans>
+   ```
+
+   - 第三步：测试
+
+   ```java
+   public class MyTest {
+       public static void main(String[] args) {
+   
+   
+           ApplicationContext context= new ClassPathXmlApplicationContext("beans.xml");
+           People people = (People) context.getBean("people");
+           people.getCat().jiao();
+           people.getDog().jiao();
+           System.out.println(people);
+   
+       }
+   }
+   ```
+
+   
+
+#### 2. java中显示装配
+
+#### 3. 隐式自动装配【重要！】
+
+##### 3.1 修改xml，添加bean的autowire属性
+
+- byName
+
+- byType
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <beans xmlns="http://www.springframework.org/schema/beans"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.springframework.org/schema/beans
+          https://www.springframework.org/schema/beans/spring-beans.xsd">
+  
+      <bean id="cat" class="com.ray.pojo.Cat" scope="singleton" />
+      <bean id="dog" class="com.ray.pojo.Dog" scope="singleton" />
+  
+      <!--byName：会自动在容器上下文中查找，和自己对象set方法后面的值对应的beanid-->
+      <!--byType：会自动在容器上下文中查找，和自己对象属性类型对应的bean-->
+      <bean id="people" class="com.ray.pojo.People" scope="singleton" autowire="byType" >
+          <!--<property name="cat" ref="cat"/>-->
+          <!--<property name="dog" ref="dog"/>-->
+          <property name="name" value="kuangshne~"/>
+      </bean>
+  
+  
+  </beans>
+  ```
+
+
+
+
+
+##### 3.2 总结
+
+byName：保证所有bean的id唯一，并且这个bean需要和注入的值一样
+
+byType：保证所有bean的class唯一，并且这个bean需要和注入的属性一样
+
+
+
