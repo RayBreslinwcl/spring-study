@@ -871,3 +871,139 @@ public class People {
   @Autowired先通过byType的方式实现，而且必须要求这个对象存在！如果超出两个bean，则通过byName实现【常用】
   @Resource默认通过byname的方式实现，如果找不到名字，则通过byType实现！如果两个都找不到的情况下，就报错！【常用】
   执行顺序不同：@Autowired 通过byType的方式实现。@Resource默认通过byname的方式实现
+
+
+
+
+
+
+
+## 八、使用注解开发[spring-06]
+
+### 1.前提
+
+#### 1.导入aop依赖（默认导入mvc依赖后直接导入）
+
+![1586382951999](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1586382951999.png)
+
+#### 2.导入xml注解配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+
+
+</beans>
+```
+
+#### 3.配置扫描包，直接
+
+```xml
+    <!--扫描pojo下的bean-->
+    <context:component-scan base-package="com.ray.pojo"/>
+    <context:annotation-config/>
+```
+
+#### 4.类中通过注解赋值
+
+```java
+package com.ray.pojo;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+/**
+ * Created by Administrator on 2020/4/9.
+ */
+//等价于<bean id="user"class="com.ray.pojo.User"/>
+@Component
+public class User {
+//    public String name="ray hello";
+
+    ////相当于<property name="name"value="ray hello2"/>
+    @Value("ray hello2")
+    public String name="ray hello";
+}
+
+```
+
+#### 5.测试
+
+```java
+import com.ray.pojo.User;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/9.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+        User user= (User) context.getBean("user");
+        System.out.println(user.name);
+
+    }
+}
+
+```
+
+
+
+### 2.bean
+
+### 3.属性如何注入【见1中】
+
+### 4.@Component衍生的注解
+
+@Component有几个衍生
+
+- dao层：@Repository
+- service:@Service
+- controller:@Controller
+
+### 5.自动装配
+
+```
+@Autowired:自动装配，通过类型-名字
+	如果Autowired不唯一，则通过@Qualifier指定beanid
+@Resource：自动装配，通过名字-类型
+```
+
+### 6.作用域
+
+```java
+@Component
+@Scope("prototype")
+public class User
+```
+
+
+
+###  7.小结
+
+xml与注解：
+
+- xml更加万能，适用于任何场合！维护简单方便
+- 注解不是自己类使用不了，维护相对复杂！
+
+xml与注解最佳实践：
+
+- oxml用来管理bean；
+- 注解只负责完成属性的注入；
+- 我们在使用的过程中，只需要注意一个问题：必须让注解生效，就需要开启注解的支持
+
+```xml
+    <!--扫描pojo下的bean-->
+    <context:component-scan base-package="com.ray.pojo"/>
+    <context:annotation-config/>
+```
+
