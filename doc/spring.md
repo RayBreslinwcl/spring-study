@@ -351,5 +351,38 @@ applicationContext.xml如下
 
 
 
-## 六、Bean作用域
+## 六、Bean作用域【spring-04-di】
+
+[参考：https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes]
+
+| Scope                                                        | Description                                                  |
+| :----------------------------------------------------------- | :----------------------------------------------------------- |
+| [singleton](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes-singleton) | (Default) Scopes a single bean definition to a single object instance for each Spring IoC container. |
+| [prototype](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes-prototype) | Scopes a single bean definition to any number of object instances. |
+| [request](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes-request) | Scopes a single bean definition to the lifecycle of a single HTTP request. That is, each HTTP request has its own instance of a bean created off the back of a single bean definition. Only valid in the context of a web-aware Spring `ApplicationContext`. |
+| [session](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes-session) | Scopes a single bean definition to the lifecycle of an HTTP `Session`. Only valid in the context of a web-aware Spring `ApplicationContext`. |
+| [application](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-factory-scopes-application) | Scopes a single bean definition to the lifecycle of a `ServletContext`. Only valid in the context of a web-aware Spring `ApplicationContext`. |
+| [websocket](https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/web.html#websocket-stomp-websocket-scope) | Scopes a single bean definition to the lifecycle of a `WebSocket`. Only valid in the context of a web-aware Spring `ApplicationContext`. |
+
+1. singleton单例
+
+```xml
+    <bean id="address" class="com.ray.pojo.Address" scope="singleton">
+        <property name="address" value="address 地址"/>
+    </bean>
+```
+
+
+
+2. prototype原型模式
+
+   每次从容器种get，都会产生一个新对象
+
+```xml
+    <bean id="address" class="com.ray.pojo.Address" scope="prototype">
+        <property name="address" value="address 地址"/>
+    </bean>
+```
+
+
 

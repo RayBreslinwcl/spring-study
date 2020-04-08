@@ -4,11 +4,11 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         https://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="address" class="com.ray.pojo.Address">
+    <bean id="address" class="com.ray.pojo.Address" scope="singleton">
         <property name="address" value="address 地址"/>
     </bean>
 
-    <bean id="student" class="com.ray.pojo.Student">
+    <bean id="student" class="com.ray.pojo.Student" scope="prototype">
         <!--第1种，普通注入-->
         <property name="name" value="ray 666"/>
 

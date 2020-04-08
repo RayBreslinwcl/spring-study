@@ -10,7 +10,10 @@ public class MyTest {
 
         ApplicationContext context= new ClassPathXmlApplicationContext("beans.xml");
         Student student = (Student) context.getBean("student");
+        Student student2 = (Student) context.getBean("student");
         System.out.println(student.getName());
         System.out.println(student);
+
+        System.out.println(student==student2);
     }
 }
