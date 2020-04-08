@@ -610,3 +610,194 @@ byType：保证所有bean的class唯一，并且这个bean需要和注入的属�
 
 
 
+### 3.使用注解实现自动装配
+
+#### 1.导入约束：context约束
+
+#### 2.配置注解的支持beans.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+
+</beans>
+```
+
+针对类修改beans.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+
+    <bean id="cat" class="com.ray.pojo.Cat" scope="singleton" />
+    <bean id="dog" class="com.ray.pojo.Dog" scope="singleton" />
+
+    <!--byName：会自动在容器上下文中查找，和自己对象set方法后面的值对应的beanid-->
+    <!--byType：会自动在容器上下文中查找，和自己对象属性类型对应的bean-->
+    <!--<bean id="people" class="com.ray.pojo.People" scope="singleton" autowire="byType" >-->
+        <!--&lt;!&ndash;<property name="cat" ref="cat"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="dog" ref="dog"/>&ndash;&gt;-->
+        <!--<property name="name" value="kuangshne~"/>-->
+    <!--</bean>-->
+    <bean id="people" class="com.ray.pojo.People" scope="singleton" />
+
+</beans>
+```
+
+#### 3.类中注解@Autowired
+
+```java
+package com.ray.pojo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+/**
+ * Created by Administrator on 2020/4/8.
+ */
+public class People {
+    @Autowired
+    Cat cat;
+    @Autowired
+    Dog dog;
+    String name;
+
+    public Cat getCat() {
+        return cat;
+    }
+
+    public void setCat(Cat cat) {
+        this.cat = cat;
+    }
+
+    public Dog getDog() {
+        return dog;
+    }
+
+    public void setDog(Dog dog) {
+        this.dog = dog;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toautoString() {
+        return "People{" +
+                "cat=" + cat +
+                ", dog=" + dog +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+
+```
+
+【重点：】Autowired默认，如果只有一个bean实例，则是byType，通过类型匹配；如果有多个bean实例，则是byName，通过beanid来匹配。此时，需要通过@Qualifile指定beanid
+
+可以通过@Qualifile关键字，匹配bean的id，指定唯一beanid。
+
+```java
+package com.ray.pojo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
+/**
+ * Created by Administrator on 2020/4/8.
+ */
+public class People {
+    @Autowired
+    Cat cat;
+    @Autowired
+    @Qualifier(value = "dog22")
+    Dog dog;
+    String name;
+
+    public Cat getCat() {
+        return cat;
+    }
+
+    public void setCat(Cat cat) {
+        this.cat = cat;
+    }
+
+    public Dog getDog() {
+        return dog;
+    }
+
+    public void setDog(Dog dog) {
+        this.dog = dog;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "People{" +
+                "cat=" + cat +
+                ", dog=" + dog +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+
+```
+
+
+
+#### 4.测试，有注解进来
+
+```java
+import com.ray.pojo.People;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/8.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+
+
+        ApplicationContext context= new ClassPathXmlApplicationContext("beans.xml");
+        People people = (People) context.getBean("people");
+        people.getCat().jiao();
+        people.getDog().jiao();
+        System.out.println(people);
+
+    }
+}
+
+结果：
+miaomiao~~~~
+wangwang~~~~
+People{cat=com.ray.pojo.Cat@192d3247, dog=com.ray.pojo.Dog@3ecd23d9, name='null'}
+```
+

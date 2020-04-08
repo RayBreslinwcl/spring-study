@@ -1,6 +1,7 @@
 package com.ray.pojo;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Created by Administrator on 2020/4/8.
@@ -9,6 +10,7 @@ public class People {
     @Autowired
     Cat cat;
     @Autowired
+    @Qualifier(value = "dog22")
     Dog dog;
     String name;
 
