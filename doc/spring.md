@@ -202,13 +202,28 @@ public class User {
 
 ```
 
-2. xml配置文件(下标赋值)
+2. xml配置文件(下标赋值)（第一种）建议！
 
+```xml
+    <bean id="user" class="com.ray.pojo.User">
+        <!--<property name="name" value="hello spring!"/>-->
+        <constructor-arg index="0" value="hello contructor"/>
+    </bean>
 ```
 
+3. 类型（第二种）不建议
+
+```xml
+    <bean id="user" class="com.ray.pojo.User">
+        <!--<property name="name" value="hello spring!"/>-->
+        <constructor-arg type="java.lang.String" value="hello contructor"/>
+    </bean>
 ```
 
 
+
+4. 参数名（第三种）
+5. 
 
 ## 四、spring配置
 
@@ -480,71 +495,32 @@ Spring会在上下文种自动寻找，并自动给bean装配属性
    - 第二步：xml显示配置
 
    ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <beans xmlns="http://www.springframework.org/schema/beans"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://www.springframework.org/schema/beans
-           https://www.springframework.org/schema/beans/spring-beans.xsd">
-   
-       <bean id="address" class="com.ray.pojo.Address" scope="singleton">
-           <property name="address" value="address 地址"/>
-       </bean>
-   
-       <bean id="student" class="com.ray.pojo.Student" scope="prototype">
-           <!--第1种，普通注入-->
-           <property name="name" value="ray 666"/>
-   
-           <!--第2种，bean注入，ref-->
-           <property name="address" ref="address"/>
-   
-           <!--第3种，数组注入-->
-           <property name="books">
-               <array>
-                   <value>红楼梦</value>
-                   <value>西游记</value>
-                   <value>三国</value>
-               </array>
-           </property>
-   
-           <property name="hobbys">
-               <list>
-                   <value>听歌</value>
-                   <value>看电影</value>
-               </list>
-           </property>
-   
-           <property name="card">
-               <map>
-                   <entry key="身份证" value="123123434"/>
-                   <entry key="身份证2" value="123123434"/>
-               </map>
-           </property>
-   
-           <property name="games">
-               <set>
-                   <value>LOL</value>
-                   <value>COC</value>
-               </set>
-           </property>
-   
-           <!--null注入-->
-           <property name="wife">
-   
-               <!--<null></null>-->
-               <null/>
-           </property>
-           
-           <!--Properties-->
-           <property name="info">
-               <props>
-                   <prop key="学号">23</prop>
-                   <prop key="学号2">2343</prop>
-                   <prop key="性别">男</prop>
-               </props>
-           </property>
-   
-       </bean>
-   </beans>
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+
+    <bean id="cat" class="com.ray.pojo.Cat" scope="singleton" />
+    <bean id="dog222" class="com.ray.pojo.Dog" scope="singleton" />
+    <bean id="dog22" class="com.ray.pojo.Dog" scope="singleton" />
+    <bean id="dog2222222" class="com.ray.pojo.Dog" scope="singleton" />
+
+    <!--byName：会自动在容器上下文中查找，和自己对象set方法后面的值对应的beanid-->
+    <!--byType：会自动在容器上下文中查找，和自己对象属性类型对应的bean-->
+    <bean id="people" class="com.ray.pojo.People" scope="singleton" autowire="byType" >
+        <property name="cat" ref="cat"/>
+        <property name="dog" ref="dog22"/>
+        <property name="name" value="kuangshne~"/>
+    </bean>
+    <!--<bean id="people" class="com.ray.pojo.People" scope="singleton" />-->
+
+</beans>
    ```
 
    - 第三步：测试
@@ -597,8 +573,6 @@ Spring会在上下文种自动寻找，并自动给bean装配属性
   
   </beans>
   ```
-
-
 
 
 
@@ -1005,5 +979,171 @@ xml与注解最佳实践：
     <!--扫描pojo下的bean-->
     <context:component-scan base-package="com.ray.pojo"/>
     <context:annotation-config/>
+```
+
+
+
+## 九、使用JavaConfig实现配置
+
+【参考：https://docs.spring.io/spring/docs/5.2.0.RELEASE/spring-framework-reference/core.html#beans-java-basic-concepts】
+
+### 1.完全使用注解，而不使用beans.xml，官网上给出
+
+```java
+@Configuration
+public class AppConfig {
+
+    @Bean
+    public MyService myService() {
+        return new MyServiceImpl();
+    }
+}
+```
+
+等效配置文件
+
+```xml
+<beans>
+    <bean id="myService" class="com.acme.services.MyServiceImpl"/>
+</beans>
+```
+
+### 2.实现步骤
+
+#### 2.1 创建类
+
+```java
+package com.ray.pojo;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ */
+//@Component
+public class User {
+    @Value("ray")
+    String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+
+```
+
+#### 2.2 创建配置类myconfig
+
+````java
+package com.ray.config;
+
+import com.ray.pojo.User;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.stereotype.Component;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ */
+@Configuration //代表这个是一个配置类，和beans.xml一样
+@ComponentScan("com.ray.pojo")
+@Import(myconfig2.class) //引入其他配置类
+public class myconfig {
+
+    /**
+     * 获取用户
+     * @return
+     */
+    //注册一个bean
+    //方法名字，就相当于bean的id
+    //返回值，就相当于bean标签中的class属性
+    @Bean
+    public User getUser(){
+        return new User();
+    }
+}
+
+````
+
+关键点
+
+（1）@Configuration //代表这个是一个配置类，和beans.xml一样
+
+（2） @Bean等效配置文件中的<bean>标签，注入被管理类。
+
+（3）额外注解：
+
+@ComponentScan("com.ray.pojo") //扫描包
+@Import(myconfig2.class) //引入其他配置类
+
+```java
+package com.ray.config;
+
+import com.ray.pojo.User;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ */
+@Configuration //代表这个是一个配置类，和beans.xml一样
+@ComponentScan("com.ray.pojo")
+public class myconfig2 {
+
+    /**
+     * 获取用户
+     * @return
+     */
+    //注册一个bean
+    //方法名字，就相当于bean的id
+    //返回值，就相当于bean标签中的class属性
+    @Bean
+    public User getUser(){
+        return new User();
+    }
+}
+
+```
+
+
+
+#### 2.3 测试
+
+```java
+import com.ray.config.myconfig;
+import com.ray.pojo.User;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ */
+public class MyTest {
+
+    public static void main(String[] args) {
+
+        //配置类，实现获取环境变量
+        ApplicationContext context = new AnnotationConfigApplicationContext(myconfig.class);
+
+        User getUser = context.getBean("getUser", User.class);
+        System.out.println(getUser);
+    }
+}
+
 ```
 

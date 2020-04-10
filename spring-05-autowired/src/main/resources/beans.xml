@@ -16,11 +16,11 @@
 
     <!--byName：会自动在容器上下文中查找，和自己对象set方法后面的值对应的beanid-->
     <!--byType：会自动在容器上下文中查找，和自己对象属性类型对应的bean-->
-    <!--<bean id="people" class="com.ray.pojo.People" scope="singleton" autowire="byType" >-->
-        <!--&lt;!&ndash;<property name="cat" ref="cat"/>&ndash;&gt;-->
-        <!--&lt;!&ndash;<property name="dog" ref="dog"/>&ndash;&gt;-->
-        <!--<property name="name" value="kuangshne~"/>-->
-    <!--</bean>-->
-    <bean id="people" class="com.ray.pojo.People" scope="singleton" />
+    <bean id="people" class="com.ray.pojo.People" scope="singleton" autowire="byType" >
+        <!--<property name="cat" ref="cat"/>-->
+        <!--<property name="dog" ref="dog"/>-->
+        <property name="name" value="kuangshne~"/>
+    </bean>
+    <!--<bean id="people" class="com.ray.pojo.People" scope="singleton" />-->
 
 </beans>
