@@ -8,4 +8,16 @@
     <select id="select" resultType="com.ray.pojo.User">
         select * from mybatis.user
     </select>
+
+    <!--添加-->
+    <insert id="addUser" parameterType="com.ray.pojo.User">
+        INSERT INTO mybatis.user (id,name,pwd) VALUES (#{id},#{name},#{pwd})
+    </insert>
+
+    <!--删除-->
+    <!--配置sql语句故意出错-->
+    <delete id="deleteUser" parameterType="int">
+        DELETES FROM mybatis.user WHERE id=#{id}
+    </delete>
 </mapper>
+
