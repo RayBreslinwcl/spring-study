@@ -2522,3 +2522,557 @@ public class MyTest {
 
 ```
 
+## 十五、mybatis-spring整合：方式二【spring-10】
+
+### 15.1 实现类
+
+参考：http://mybatis.org/spring/zh/sqlsession.html#SqlSessionDaoSupport
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+import org.apache.ibatis.session.SqlSession;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.support.SqlSessionDaoSupport;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class UserMapperImp2 extends SqlSessionDaoSupport implements UserMapper {
+    public List<User> select() {
+//        SqlSession sqlSession=getSqlSession();
+//        UserMapper userMapper=sqlSession.getMapper(UserMapper.class);
+//        return userMapper.select();
+
+//        精简一行
+        return getSqlSession().getMapper(UserMapper.class).select();
+
+
+    }
+}
+
+```
+
+### 15.2 spring配置spring-config.xml
+
+注入userMapper2，同时注入对应属性：sqlSessionFactory
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--dataSource：使用Spring的数据源替换Mybatis的配置-->
+    <!--使用spring提供的jdbc：org.springframework.jdbc.datasource-->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+    </bean>
+
+    <!--sqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!--绑定mybatis配置文件（当然可以不绑定，全部在spring中配置-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath:com/ray/mapper/*.xml"/>
+    </bean>
+
+    <!--SqlSessionTemplate：就是sqlSession-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <!--只能通过构造器注入sqlSessionFactory，因为它没有set方法-->
+        <constructor-arg index="0" ref="sqlSessionFactory"/>
+    </bean>
+
+
+    <!--userMapper注入-->
+    <bean id="userMapper" class="com.ray.mapper.UserMapperImp" >
+        <property name="sqlSession" ref="sqlSession"/>
+    </bean>
+
+
+    <!--userMapper2注入-->
+    <bean id="userMapper2" class="com.ray.mapper.UserMapperImp2">
+        <!--需要注入sqlSessionFactory-->
+        <!--参考：http://mybatis.org/spring/zh/sqlsession.html#SqlSessionDaoSupport-->
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+</beans>
+```
+
+### 15.3测试
+
+```java
+import com.ray.mapper.UserMapper;
+import com.ray.pojo.User;
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.junit.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+
+    @Test
+    public void select() throws IOException {
+//        String resources="mybatis-config.xml";
+//        InputStream is = Resources.getResourceAsStream(resources);
+//        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(is);
+//
+//        SqlSession sqlSession = sqlSessionFactory.openSession(true);
+//
+//        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+//        List<User> users = mapper.select();
+//
+//        for (User user : users) {
+//            System.out.println(user);
+//        }
+
+//        测试spring集成
+        ApplicationContext context=new ClassPathXmlApplicationContext("spring-config.xml");
+        UserMapper userMapper = context.getBean("userMapper2", UserMapper.class);
+        for (User user : userMapper.select()) {
+            System.out.println(user);
+        }
+
+    }
+}
+
+```
+
+## 十六、声明式事务【spring-11-transaction】
+
+### 16.1事务ACID原则：
+
+- 原子性
+- 一致性
+- 隔离性
+- 持久性
+
+### 16.2 创建spring-mybatis项目
+
+#### 16.2.1依赖和build
+
+依赖
+
+```xml
+    <!--导入依赖-->
+    <dependencies>
+        <!--mysql驱动-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <!--<version>5.1.47</version>-->
+            <version>8.0.17</version>
+        </dependency>
+        <!--mybatis-->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+        <!--junit-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-webmvc -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>5.2.0.RELEASE</version>
+        </dependency>
+        <!--spring操作数据库，需要spring-jdbc-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>5.2.0.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.8.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.10</version>
+        </dependency>
+
+
+    </dependencies>
+```
+
+build
+
+```xml
+    <!--在build中配置resources，来防止我们资源导出失败的问题-->
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+```
+
+#### 16.2.2 实体类pojo
+
+```java
+package com.ray.pojo;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+    private int id;
+    private String name;
+    private String pwd;
+}
+
+```
+
+
+
+#### 16.2.3 接口和对应mapper.xml
+
+mapper接口
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public interface UserMapper {
+    //查询所有用户
+    public List<User> select();
+
+}
+
+```
+
+配置xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace=绑定一个对应的mapper接口-->
+<mapper namespace="com.ray.mapper.UserMapper">
+    <!--select查询语句-->
+    <select id="select" resultType="com.ray.pojo.User">
+        select * from mybatis.user
+    </select>
+</mapper>
+```
+
+
+
+
+
+#### 16.2.4 mybatis配置mybatis-config.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!--configuration核心配置文件-->
+<configuration>
+    <typeAliases>
+        <package name="com.ray.pojo"/>
+    </typeAliases>
+
+
+    <!--environments配置环境组-->
+    <!--default默认环境-->
+    <!--<environments default="development">-->
+        <!--&lt;!&ndash;environment单个环境&ndash;&gt;-->
+        <!--<environment id="development">-->
+            <!--&lt;!&ndash;transactionManager配置事务管理器&ndash;&gt;-->
+            <!--<transactionManager type="JDBC"/>-->
+            <!--&lt;!&ndash;配置连接池&ndash;&gt;-->
+            <!--<dataSource type="POOLED">-->
+                <!--<property name="driver" value="com.mysql.jdbc.Driver"/>-->
+                <!--&lt;!&ndash;<property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis?useSSL=true&amp;useUnicode=true&amp;characterEncoding=UFT-8"/>&ndash;&gt;-->
+                <!--<property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>-->
+                <!--<property name="username" value="root"/>-->
+                <!--<property name="password" value="123456"/>-->
+            <!--</dataSource>-->
+        <!--</environment>-->
+    <!--</environments>-->
+
+
+    <!--每一个Mapper.XML都需要在mybatis核心配置文件中注册-->
+    <!--<mappers>-->
+        <!--<mapper resource="com/ray/mapper/UserMapper.xml"/>-->
+    <!--</mappers>-->
+
+</configuration>
+```
+
+#### 16.2.5 spring配置+集成mybatis配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--dataSource：使用Spring的数据源替换Mybatis的配置-->
+    <!--使用spring提供的jdbc：org.springframework.jdbc.datasource-->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+    </bean>
+
+    <!--sqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!--绑定mybatis配置文件（当然可以不绑定，全部在spring中配置-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath:com/ray/mapper/*.xml"/>
+    </bean>
+
+    <!--SqlSessionTemplate：就是sqlSession-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <!--只能通过构造器注入sqlSessionFactory，因为它没有set方法-->
+        <constructor-arg index="0" ref="sqlSessionFactory"/>
+    </bean>
+
+
+    <!--userMapper2注入-->
+    <bean id="userMapper2" class="com.ray.mapper.UserMapperImp2">
+        <!--需要注入sqlSessionFactory-->
+        <!--参考：http://mybatis.org/spring/zh/sqlsession.html#SqlSessionDaoSupport-->
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+</beans>
+```
+
+#### 16.2.6 测试
+
+```java
+import com.ray.mapper.UserMapper;
+import com.ray.pojo.User;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+        ApplicationContext context = new ClassPathXmlApplicationContext("spring-config.xml");
+        UserMapper userMapper2 = context.getBean("userMapper2", UserMapper.class);
+        for (User user : userMapper2.select()) {
+            System.out.println(user);
+        }
+    }
+}
+
+```
+
+
+
+
+
+### 16.3 模拟事务问题
+
+#### 16.3.1 添加删除和增加方法接口
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public interface UserMapper {
+    //查询所有用户
+    public List<User> select();
+
+    //添加
+    public int addUser(User user);
+
+    //删除
+    public int deleteUser(int id);
+}
+
+```
+
+
+
+#### 16.3.2 对应mapper.xml添加
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace=绑定一个对应的mapper接口-->
+<mapper namespace="com.ray.mapper.UserMapper">
+    <!--select查询语句-->
+    <select id="select" resultType="com.ray.pojo.User">
+        select * from mybatis.user
+    </select>
+
+    <!--添加-->
+    <insert id="addUser" parameterType="com.ray.pojo.User">
+        INSERT INTO mybatis.user (id,name,pwd) VALUES (#{id},#{name},#{pwd})
+    </insert>
+
+    <!--删除-->
+    <!--配置sql语句故意出错-->
+    <delete id="deleteUser" parameterType="int">
+        DELETES FROM mybatis.user WHERE id=#{id}
+    </delete>
+</mapper>
+
+
+```
+
+注意：deleteUser方法sql语句故意写错
+
+#### 16.3.3 实现类添加这两个方法
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+import org.mybatis.spring.support.SqlSessionDaoSupport;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class UserMapperImp2 extends SqlSessionDaoSupport implements UserMapper {
+    public List<User> select() {
+//        SqlSession sqlSession=getSqlSession();
+//        UserMapper userMapper=sqlSession.getMapper(UserMapper.class);
+//        return userMapper.select();
+
+        //为了测试事务，直接添加
+        User user=new User(10,"上","12453234");
+        UserMapper userMapper=getSqlSession().getMapper(UserMapper.class);
+        userMapper.addUser(user);
+        userMapper.deleteUser(6);
+
+//        精简一行
+        return getSqlSession().getMapper(UserMapper.class).select();
+
+
+    }
+
+
+    public int addUser(User user) {
+        return getSqlSession().getMapper(UserMapper.class).addUser(user);
+    }
+
+    public int deleteUser(int id) {
+        return getSqlSession().getMapper(UserMapper.class).deleteUser(id);
+
+    }
+}
+
+```
+
+
+
+#### 16.3.4 测试
+
+失败，但是10这条数据添加到数据库中
+
+```java
+import com.ray.mapper.UserMapper;
+import com.ray.pojo.User;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+        ApplicationContext context = new ClassPathXmlApplicationContext("spring-config.xml");
+        UserMapper userMapper2 = context.getBean("userMapper2", UserMapper.class);
+        for (User user : userMapper2.select()) {
+            System.out.println(user);
+        }
+    }
+}
+
+```
+
+
+
+
+
+
+
+### 16.4 事务管理实现spring
+
+#### 16.4.1 声明式事务：aop
+
+
+
+
+
+#### 16.4.2 编程式事务：需要在代码中，进行事务管理【一般不用】
