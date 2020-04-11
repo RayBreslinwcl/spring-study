@@ -2059,3 +2059,466 @@ public class MyTest {
 
 ```
 
+
+
+## 十四、整合mybatis-spring【spirng-10】
+
+#### 14.1.步骤
+
+##### 14.1.1.导入相关jar包
+
+- junit
+
+- mybatis
+
+- mysql数据库
+
+- spring相关的
+
+- aop织入
+
+- mybatis-spring【new】
+
+  ```xml
+  <!--导入依赖-->
+      <dependencies>
+          <!--mysql驱动-->
+          <dependency>
+              <groupId>mysql</groupId>
+              <artifactId>mysql-connector-java</artifactId>
+              <version>5.1.47</version>
+          </dependency>
+          <!--mybatis-->
+          <dependency>
+              <groupId>org.mybatis</groupId>
+              <artifactId>mybatis</artifactId>
+              <version>3.5.2</version>
+          </dependency>
+          <!--junit-->
+          <dependency>
+              <groupId>junit</groupId>
+              <artifactId>junit</artifactId>
+              <version>4.12</version>
+          </dependency>
+  
+          <!-- https://mvnrepository.com/artifact/org.springframework/spring-webmvc -->
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-webmvc</artifactId>
+              <version>5.2.0.RELEASE</version>
+          </dependency>
+          <!--spring操作数据库，需要spring-jdbc-->
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-jdbc</artifactId>
+              <version>5.2.0.RELEASE</version>
+          </dependency>
+  
+          <dependency>
+              <groupId>org.aspectj</groupId>
+              <artifactId>aspectjweaver</artifactId>
+              <version>1.8.13</version>
+          </dependency>
+  
+          <dependency>
+              <groupId>org.mybatis</groupId>
+              <artifactId>mybatis-spring</artifactId>
+              <version>2.0.2</version>
+          </dependency>
+  
+          <dependency>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.16.10</version>
+          </dependency>
+  
+  
+      </dependencies>
+```
+  
+build中导入
+  
+  ```xml
+  <!--在build中配置resources，来防止我们资源导出失败的问题-->
+      <build>
+          <resources>
+              <resource>
+                  <directory>src/main/resources</directory>
+                  <includes>
+                  <include>**/*.properties</include>
+                  <include>**/*.xml</include>
+                  </includes>
+              </resource>
+              <resource>
+                  <directory>src/main/java</directory>
+                  <includes>
+                      <include>**/*.properties</include>
+                      <include>**/*.xml</include>
+                  </includes>
+                  <filtering>true</filtering>
+              </resource>
+          </resources>
+      </build>
+  ```
+
+##### 14.1.2.编写核心类
+
+```java
+package com.ray.pojo;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+    private int id;
+    private String name;
+    private String pwd;
+}
+
+```
+
+
+
+##### 14.1.3.编写核心mybatis-config.xml配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!--configuration核心配置文件-->
+<configuration>
+    <typeAliases>
+        <package name="com.ray.pojo"/>
+    </typeAliases>
+
+
+    <!--environments配置环境组-->
+    <!--default默认环境-->
+    <environments default="development">
+        <!--environment单个环境-->
+        <environment id="development">
+            <!--transactionManager配置事务管理器-->
+            <transactionManager type="JDBC"/>
+            <!--配置连接池-->
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <!--<property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis?useSSL=true&amp;useUnicode=true&amp;characterEncoding=UFT-8"/>-->
+                <property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+
+    <!--每一个Mapper.XML都需要在mybatis核心配置文件中注册-->
+    <mappers>
+        <mapper resource="com/ray/mapper/UserMapper.xml"/>
+    </mappers>
+
+</configuration>
+```
+
+
+
+##### 14.1.4.编写Mapper接口和xml
+
+接口
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public interface UserMapper {
+    //查询所有用户
+    public List<User> select();
+
+}
+
+```
+
+UserMapper.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace=绑定一个对应的mapper接口-->
+<mapper namespace="com.ray.mapper.UserMapper">
+    <!--select查询语句-->
+    <select id="select" resultType="com.ray.pojo.User">
+        select * from mybatis.user
+    </select>
+</mapper>
+```
+
+添加mapper配置到核心配置文件mybatis-config.xml中
+
+```xml
+    <!--每一个Mapper.XML都需要在mybatis核心配置文件中注册-->
+    <mappers>
+        <mapper resource="com/ray/mapper/UserMapper.xml"/>
+    </mappers>
+```
+
+
+
+##### 14.1.4.测试
+
+```java
+import com.ray.mapper.UserMapper;
+import com.ray.pojo.User;
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+
+    @Test
+    public void select() throws IOException {
+        String resources="mybatis-config.xml";
+        InputStream is = Resources.getResourceAsStream(resources);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(is);
+
+        SqlSession sqlSession = sqlSessionFactory.openSession(true);
+
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        List<User> users = mapper.select();
+
+        for (User user : users) {
+            System.out.println(user);
+        }
+    }
+}
+
+```
+
+### 14.2.mybatis-spring
+
+#### 14.2.1 官网和版本
+
+http://mybatis.org/spring/zh/index.html
+
+版本对应
+
+![版本](E:\Tools\WorkspaceforMyeclipse\spring-study\doc\imgs\mybatis-spring.png)
+
+
+
+#### 14.2.2 pom依赖
+
+```xml
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+
+        <!--spring操作数据库，需要spring-jdbc-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>5.2.0.RELEASE</version>
+        </dependency>
+```
+
+
+
+#### 14.2.3 spirng配置文件xml
+
+##### 14.2.3.1 spring管理数据源，而把之前mybatis管理数据源给去除掉mybatis-config.xml配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!--configuration核心配置文件-->
+<configuration>
+    <typeAliases>
+        <package name="com.ray.pojo"/>
+    </typeAliases>
+
+
+    <!--environments配置环境组-->
+    <!--default默认环境-->
+    <!--<environments default="development">-->
+        <!--&lt;!&ndash;environment单个环境&ndash;&gt;-->
+        <!--<environment id="development">-->
+            <!--&lt;!&ndash;transactionManager配置事务管理器&ndash;&gt;-->
+            <!--<transactionManager type="JDBC"/>-->
+            <!--&lt;!&ndash;配置连接池&ndash;&gt;-->
+            <!--<dataSource type="POOLED">-->
+                <!--<property name="driver" value="com.mysql.jdbc.Driver"/>-->
+                <!--&lt;!&ndash;<property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis?useSSL=true&amp;useUnicode=true&amp;characterEncoding=UFT-8"/>&ndash;&gt;-->
+                <!--<property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>-->
+                <!--<property name="username" value="root"/>-->
+                <!--<property name="password" value="123456"/>-->
+            <!--</dataSource>-->
+        <!--</environment>-->
+    <!--</environments>-->
+
+
+    <!--每一个Mapper.XML都需要在mybatis核心配置文件中注册-->
+    <!--<mappers>-->
+        <!--<mapper resource="com/ray/mapper/UserMapper.xml"/>-->
+    <!--</mappers>-->
+
+</configuration>
+```
+
+##### 14.2.3.2 spring编写数据源（如下）
+
+##### 14.2.3.3 sqlSessionFactory（如下）
+
+##### 14.2.3.4 sqlSessionTemplate（如下）
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--dataSource：使用Spring的数据源替换Mybatis的配置-->
+    <!--使用spring提供的jdbc：org.springframework.jdbc.datasource-->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://192.168.0.120:3306/mybatis"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+    </bean>
+
+    <!--sqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!--绑定mybatis配置文件（当然可以不绑定，全部在spring中配置-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath:com/ray/mapper/*.xml"/>
+    </bean>
+
+    <!--SqlSessionTemplate：就是sqlSession-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <!--只能通过构造器注入sqlSessionFactory，因为它没有set方法-->
+        <constructor-arg index="0" ref="sqlSessionFactory"/>
+    </bean>
+
+
+    <!--userMapper注入-->
+    <bean id="userMapper" class="com.ray.mapper.UserMapperImp" >
+        <property name="sqlSession" ref="sqlSession"/>
+    </bean>
+
+
+</beans>
+```
+
+
+
+
+
+### 14.2.4 给接口添加实现类，并且，切记注入到spring中（在上面已经完成）
+
+```java
+package com.ray.mapper;
+
+import com.ray.pojo.User;
+import org.mybatis.spring.SqlSessionTemplate;
+
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class UserMapperImp implements UserMapper {
+    //之前都是使用sqlSession执行
+    //之后都是使用sqlSessionTemplate
+    private SqlSessionTemplate sqlSession;
+
+    public void setSqlSession(SqlSessionTemplate sqlSession) {
+        this.sqlSession = sqlSession;
+    }
+
+    public List<User> select() {
+//        return null;
+        return sqlSession.getMapper(UserMapper.class).select();
+    }
+}
+
+```
+
+
+
+### 14.2.5 测试
+
+```java
+import com.ray.mapper.UserMapper;
+import com.ray.pojo.User;
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.junit.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+
+    @Test
+    public void select() throws IOException {
+//        String resources="mybatis-config.xml";
+//        InputStream is = Resources.getResourceAsStream(resources);
+//        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(is);
+//
+//        SqlSession sqlSession = sqlSessionFactory.openSession(true);
+//
+//        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+//        List<User> users = mapper.select();
+//
+//        for (User user : users) {
+//            System.out.println(user);
+//        }
+
+//        测试spring集成
+        ApplicationContext context=new ClassPathXmlApplicationContext("spring-config.xml");
+        UserMapper userMapper = context.getBean("userMapper", UserMapper.class);
+        for (User user : userMapper.select()) {
+            System.out.println(user);
+        }
+
+    }
+}
+
+```
+
