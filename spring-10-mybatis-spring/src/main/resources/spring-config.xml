@@ -34,4 +34,10 @@
     </bean>
 
 
+    <!--userMapper2注入-->
+    <bean id="userMapper2" class="com.ray.mapper.UserMapperImp2">
+        <!--需要注入sqlSessionFactory-->
+        <!--参考：http://mybatis.org/spring/zh/sqlsession.html#SqlSessionDaoSupport-->
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
 </beans>

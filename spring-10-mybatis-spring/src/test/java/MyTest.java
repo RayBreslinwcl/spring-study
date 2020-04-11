@@ -34,7 +34,7 @@ public class MyTest {
 
 //        测试spring集成
         ApplicationContext context=new ClassPathXmlApplicationContext("spring-config.xml");
-        UserMapper userMapper = context.getBean("userMapper", UserMapper.class);
+        UserMapper userMapper = context.getBean("userMapper2", UserMapper.class);
         for (User user : userMapper.select()) {
             System.out.println(user);
         }
