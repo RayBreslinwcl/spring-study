@@ -1466,4 +1466,596 @@ public class Client {
 
 
 
-#### 10.4.5
+#### 10.4.5 实现代码demo04万能代理
+
+- 抽象角色：一般会使用接口或者抽象类来解决
+
+  ```java
+  package com.ray.demo03;
+  
+  /**
+   * Created by Administrator on 2020/4/10.
+   */
+  public interface Rent {
+      //出租房屋
+      public void rent();
+  }
+  
+  ```
+
+  
+
+- 真实角色：被代理的角色
+
+```java
+package com.ray.demo03;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ * 房东
+ */
+public class Host implements Rent {
+    public void rent(){
+        System.out.println("我是房东，要租房子");
+    }
+}
+
+```
+
+- 代理角色：代理真实角色，代理真实角色后，我们一般会做一些附属操作。通过动态代理类创建
+
+```java
+package com.ray.demo04;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ * 通用代理类
+ */
+public class ProxyInvocationHandler implements InvocationHandler {
+
+    //被代理的接口
+//    private Rent rent;
+    private Rent target;
+
+
+    public void setTarget(Rent rent) {
+        this.target = rent;
+    }
+
+    //生成得到代理类
+    public Object getProxy(){
+        return Proxy.newProxyInstance(this.getClass().getClassLoader(),target.getClass().getInterfaces(),this);
+    }
+
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
+        //日志方法
+        log(method.getName());
+        //之前
+        seeHouse();
+
+        //执行代理对象的方法
+        //动态代理本质，就是使用反射实现
+        Object result= method.invoke(target,args);
+
+        //之后签合同
+        hetong();
+        return result;
+    }
+
+    //=====================================================
+    //中介代理过程中添加的骚操作
+    public void seeHouse(){
+        System.out.println("中介带你看房");
+    }
+
+    public void hetong(){
+        System.out.println("签订合同");
+    }
+
+
+    //打印日志方法
+    public void log(String msg){
+        System.out.println("执行了"+msg+"方法");
+    }
+}
+
+```
+
+
+
+- 客户：访问代理对象的人！
+
+```java
+package com.ray.demo04;
+
+/**
+ * Created by Administrator on 2020/4/10.
+ */
+public class client {
+    public static void main(String[] args) {
+
+        //真实角色
+        Host host=new Host();
+//        可以代理
+        ProxyInvocationHandler pih=new ProxyInvocationHandler();
+        pih.setTarget(host);
+        //获取代理对象
+        Rent proxy = (Rent) pih.getProxy();
+
+//        动态生成代理类
+        proxy.rent();
+
+    }
+}
+
+```
+
+
+
+## 十一、AOP实现方式一【spring-09-aop】
+
+### 11.1 概念
+
+AOPIAspect Oriented Programming）意为：面向切面编程，通过预编译方式和运行期动态代理实现程序功能的统一维护的一种技术。AOP是OOP的延续，是软件开发中的一个热点，也是Spring框架中的一个重要内容，是函数式编程的一种衍生范型。利用AOP可以对业务逻辑的各个部分进行隔离，从而使得业务逻辑各部分之间的耦合度降低，提高程序的可重用性，同时提高了开发的效率。
+
+![1586558949844](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1586558949844.png)
+
+
+
+### 11.2 作用
+
+提供声明式事务；允许用户自定义切面
+
+- 横切关注点：跨越应用程序多个模块的方法或功能。即是，与我们业务逻辑无关的，但是我们需要关注的部分，就是横切关注点。如日志，安全，缓存，事务等等…
+- 切面（ASPECT）：横切关注点被模块化的特殊对象。即，它是一个类。·通知（Advice）：切面必须要完成的工作。即，它是类中的一个方法。
+- 目标（Target）：被通知对象。
+- 代理（Proxy）：向目标对象应用通知之后创建的对象。
+- 切入点（PointCut）：切面通知执行的“地点”的定义。
+- 连接点（JointPoint）：与切入点匹配的执行点。
+
+![1586559088899](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1586559088899.png)
+
+### 11.3 5种advice
+
+SpringAOP中，通过Advice定义横切逻辑，Spring中支持5种类型的Advice：
+
+![advice](E:\Tools\WorkspaceforMyeclipse\spring-study\doc\imgs\advice-5.png)
+
+### 11.4 spring实现aop
+
+1. 导入依赖
+
+   ```xml
+           <dependency>
+               <groupId>org.aspectj</groupId>
+               <artifactId>aspectjweaver</artifactId>
+               <version>1.9.4</version>
+           </dependency>
+   ```
+
+   
+
+2. 业务类
+
+```java
+//接口
+package com.ray.service;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public interface UserService {
+    public void add();
+    public void delete();
+    public void update();
+    public void select();
+}
+
+
+//实现类
+package com.ray.service;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class UserServiceImp implements UserService {
+    public void add() {
+        System.out.println("增加了一个用户");
+    }
+
+    public void delete() {
+        System.out.println("删除了一个用户");
+    }
+
+    public void update() {
+        System.out.println("更新了一个用户");
+    }
+
+    public void select() {
+        System.out.println("查询了一个用户");
+    }
+}
+
+```
+
+3. 实现日志log织入：方法一
+
+   前置日志
+
+   ```java
+   package com.ray.logAspect;
+   
+   import org.springframework.aop.MethodBeforeAdvice;
+   import org.springframework.lang.Nullable;
+   
+   import java.lang.reflect.Method;
+   
+   /**
+    * Created by Administrator on 2020/4/11.
+    */
+   public class beforelog implements MethodBeforeAdvice {
+       /**
+        *
+        * @param method 要执行的目标对象方法
+        * @param args 参数
+        * @param target 目标对象
+        * @throws Throwable
+        */
+       public void before(Method method, Object[] args, @Nullable Object target) throws Throwable {
+           System.out.println(target.getClass().getName()+"的"+method.getName()+"被执行了！");
+       }
+   }
+   
+   ```
+
+   
+
+   后置日志
+
+   ```java
+   package com.ray.logAspect;
+   
+   import org.springframework.aop.AfterAdvice;
+   import org.springframework.aop.AfterReturningAdvice;
+   import org.springframework.lang.Nullable;
+   
+   import java.lang.reflect.Method;
+   
+   /**
+    * Created by Administrator on 2020/4/11.
+    */
+   public class afterlog implements AfterReturningAdvice {
+       public void afterReturning(@Nullable Object returnValue, Method method, Object[] objects, @Nullable Object o1) throws Throwable {
+   
+   
+           System.out.println("执行了"+method.getName()+"返回结果为"+returnValue);
+   
+       }
+   }
+   
+   ```
+
+   
+
+4. applicationContext.xml导入aop约束，通入切入点
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--<context:annotation-config/>-->
+
+    <bean id="userService" class="com.ray.service.UserServiceImp"/>
+    <bean id="beforeLog" class="com.ray.logAspect.beforelog"/>
+    <bean id="afterLog" class="com.ray.logAspect.afterlog" />
+
+
+    <!--方式一：直接使用spring api接口-->
+    <!--配置aop：首先导入sop约束-->
+    <aop:config>
+        <!--切入点：expression表达式，execution中添加要执行的位置-->
+        <aop:pointcut id="pointcut" expression="execution(* com.ray.service.UserServiceImp.*(..))"/>
+
+        <!--执行环绕增强-->
+        <aop:advisor advice-ref="beforeLog" pointcut-ref="pointcut"/>
+        <aop:advisor advice-ref="afterLog" pointcut-ref="pointcut"/>
+    </aop:config>
+
+
+</beans>
+```
+
+
+
+5.测试实现
+
+```java
+import com.ray.service.UserService;
+import com.ray.service.UserServiceImp;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+
+        //获取管理容器
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+        //默认jdk代理，是动态代理的是接口!
+        UserService userService = context.getBean("userService", UserService.class);
+
+        userService.add();
+    }
+}
+
+```
+
+
+
+
+
+## 十二、AOP实现方式二：使用自定义类实现【spring-09-aop】
+
+### 12.1自定义且面类
+
+```java
+package com.ray.diylog;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class logPointcut {
+    public void before(){
+        System.out.println("================方法执行前================");
+    }
+
+    public void after(){
+        System.out.println("================方法执行后================");
+    }
+}
+
+```
+
+### 12.2 配置applicationContext.xml文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--<context:annotation-config/>-->
+
+    <bean id="userService" class="com.ray.service.UserServiceImp"/>
+    <bean id="beforeLog" class="com.ray.logAspect.beforelog"/>
+    <bean id="afterLog" class="com.ray.logAspect.afterlog" />
+
+
+    <!--方式一：直接使用spring api接口-->
+    <!--配置aop：首先导入sop约束-->
+    <!--<aop:config>-->
+        <!--&lt;!&ndash;切入点：expression表达式，execution中添加要执行的位置&ndash;&gt;-->
+        <!--<aop:pointcut id="pointcut" expression="execution(* com.ray.service.UserServiceImp.*(..))"/>-->
+
+        <!--&lt;!&ndash;执行环绕增强&ndash;&gt;-->
+        <!--<aop:advisor advice-ref="beforeLog" pointcut-ref="pointcut"/>-->
+        <!--<aop:advisor advice-ref="afterLog" pointcut-ref="pointcut"/>-->
+    <!--</aop:config>-->
+
+
+    <!--方式二：自定义类-->
+    <bean id="diyLogPoint" class="com.ray.diylog.logPointcut"/>
+
+    <aop:config>
+        <!--自定义切面，ref使用引用类-->
+        <aop:aspect ref="diyLogPoint">
+            <!--切入点-->
+            <aop:pointcut id="point" expression="execution(* com.ray.service.UserServiceImp.*(..))"/>
+            <!--通知-->
+            <aop:before method="before" pointcut-ref="point"/>
+            <aop:after method="after" pointcut-ref="point"/>
+        </aop:aspect>
+    </aop:config>
+
+
+</beans>
+```
+
+### 12.3测试类：不变
+
+```java
+import com.ray.service.UserService;
+import com.ray.service.UserServiceImp;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+
+        //方式一：测试
+        //方式二：测试
+        //获取管理容器
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+        //默认jdk代理，是动态代理的是接口!
+        UserService userService = context.getBean("userService", UserService.class);
+
+        userService.add();
+
+
+
+    }
+}
+
+```
+
+
+
+
+
+## 十三、AOP实现方式三：注解实现【spring-09-aop】
+
+### 13.1自定义且面类
+
+```java
+package com.ray.diylog;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ * 注解实现
+ */
+@Aspect
+public class AnnotationPointCut {
+
+    @Before("execution(* com.ray.service.UserServiceImp.*(..))")
+    public void beforelog(){
+        System.out.println("================注解类实现：方法执行前================");
+    }
+
+    @After("execution(* com.ray.service.UserServiceImp.*(..))")
+    public void afterlog(){
+        System.out.println("================注解类实现：方法执行后================");
+    }
+
+    //在环绕增强中，可以给定一个参数，代表需要获取切入点的信息
+    @Around("execution(* com.ray.service.UserServiceImp.*(..))")
+    public void around(ProceedingJoinPoint pro) throws Throwable {
+        System.out.println("环绕前");
+        Object proceed=pro.proceed();
+        System.out.println("环绕后");
+    }
+
+    /**
+     * 执行顺序结果
+     *
+     *
+         环绕前
+         ================注解类实现：方法执行前================
+         增加了一个用户
+         环绕后
+         ================注解类实现：方法执行后================
+     */
+}
+
+```
+
+### 13.2 配置xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--<context:annotation-config/>-->
+
+    <bean id="userService" class="com.ray.service.UserServiceImp"/>
+    <bean id="beforeLog" class="com.ray.logAspect.beforelog"/>
+    <bean id="afterLog" class="com.ray.logAspect.afterlog" />
+
+
+    <!--方式一：直接使用spring api接口-->
+    <!--配置aop：首先导入sop约束-->
+    <!--<aop:config>-->
+        <!--&lt;!&ndash;切入点：expression表达式，execution中添加要执行的位置&ndash;&gt;-->
+        <!--<aop:pointcut id="pointcut" expression="execution(* com.ray.service.UserServiceImp.*(..))"/>-->
+
+        <!--&lt;!&ndash;执行环绕增强&ndash;&gt;-->
+        <!--<aop:advisor advice-ref="beforeLog" pointcut-ref="pointcut"/>-->
+        <!--<aop:advisor advice-ref="afterLog" pointcut-ref="pointcut"/>-->
+    <!--</aop:config>-->
+
+
+    <!--方式二：自定义类-->
+    <!--<bean id="diyLogPoint" class="com.ray.diylog.logPointcut"/>-->
+
+    <!--<aop:config>-->
+        <!--&lt;!&ndash;自定义切面，ref使用引用类&ndash;&gt;-->
+        <!--<aop:aspect ref="diyLogPoint">-->
+            <!--&lt;!&ndash;切入点&ndash;&gt;-->
+            <!--<aop:pointcut id="point" expression="execution(* com.ray.service.UserServiceImp.*(..))"/>-->
+            <!--&lt;!&ndash;通知&ndash;&gt;-->
+            <!--<aop:before method="before" pointcut-ref="point"/>-->
+            <!--<aop:after method="after" pointcut-ref="point"/>-->
+        <!--</aop:aspect>-->
+    <!--</aop:config>-->
+
+
+    <!--方式三-->
+    <!--注册切面类，或者直接@Component也可-->
+    <bean id="annotation" class="com.ray.diylog.AnnotationPointCut"/>
+    <!--开启注解支持-->
+    <!--动态代理实现：JDK(默认）proxy-target-class="false"  cglib：proxy-target-class="true"-->
+    <aop:aspectj-autoproxy proxy-target-class="false"/>
+</beans>
+
+```
+
+### 13.3 测试类不变
+
+```java
+import com.ray.service.UserService;
+import com.ray.service.UserServiceImp;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+/**
+ * Created by Administrator on 2020/4/11.
+ */
+public class MyTest {
+    public static void main(String[] args) {
+
+        //方式一：测试
+        //方式二：测试
+        //获取管理容器
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+        //默认jdk代理，是动态代理的是接口!
+        UserService userService = context.getBean("userService", UserService.class);
+
+        userService.add();
+
+
+
+    }
+}
+
+```
+
